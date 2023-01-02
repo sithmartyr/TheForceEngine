@@ -1,6 +1,10 @@
 #include "audioDevice.h"
 #include <TFE_System/system.h>
-#include "RtAudio.h"
+#ifdef __linux__
+ #include <rtaudio/RtAudio.h>
+#else
+ #include "RtAudio.h"
+#endif
 
 //This system uses "RtAudio" as the low level, cross platform interface to the Audio system.
 //https://www.music.mcgill.ca/~gary/rtaudio/
@@ -40,9 +44,10 @@ namespace TFE_AudioDevice
 		{
 			s_device = new RtAudio();
 		}
-		catch(...)
+		catch(RtAudioError e)
 		{
-			TFE_System::logWrite(LOG_ERROR, "Audio", "Cannot initialize the audio system.");
+			const std::string errmsg = e.getMessage();
+			TFE_System::logWrite(LOG_ERROR, "Audio", "Cannot initialize the audio system. '%s'", errmsg.c_str());
 			s_device = nullptr;
 		}
 		if (!s_device) { return false; }
@@ -118,9 +123,10 @@ namespace TFE_AudioDevice
 			}
 			return !s_outputDeviceList.empty();
 		}
-		catch (...)
+		catch (RtAudioError e)
 		{
-			TFE_System::logWrite(LOG_ERROR, "Audio", "Cannot query audio output devices.");
+			const std::string msg = e.getMessage();
+			TFE_System::logWrite(LOG_ERROR, "Audio", "Cannot query audio output devices. '%s'", msg.c_str());
 		}
 		return false;
 	}
@@ -153,9 +159,10 @@ namespace TFE_AudioDevice
 			s_device->startStream();
 			s_streamStarted = true;
 		}
-		catch (...)
+		catch (RtAudioError e)
 		{
-			TFE_System::logWrite(LOG_ERROR, "Audio", "Cannot start audio stream for output device %u.", s_outputDevice);
+			const std::string msg = e.getMessage();
+			TFE_System::logWrite(LOG_ERROR, "Audio", "Cannot start audio stream for output device %u: '%s'", s_outputDevice, msg.c_str());
 			s_streamStarted = false;
 			return false;
 		}

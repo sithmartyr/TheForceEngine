@@ -1,14 +1,84 @@
 #include "filestream.h"
 #include <TFE_Archive/archive.h>
+#include <TFE_System/system.h>
 #include <cassert>
 #include <cstring>
+#include <dirent.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 //Work buffers for handling special cases like std::string without allocating memory (beyond what the strings needs itself).
 // TODO: This should be put in a shared place.
 extern u32  s_workBufferU32[1024];		//4k buffer.
 extern char s_workBufferChar[32768];	//32k buffer.
+
+
+// Linux filesystems are case-sensitive; try to open the
+// base directory and find a file that has the same name
+// with different case.
+// Caller MUST free the pointer returned by this function!
+static char *try_to_find_file(const char *filename)
+{
+	char *fncopy, *dn, *fn;
+	char *result = NULL;
+	struct dirent *de;
+	DIR *dir;
+	int ol, dl, fl, nfl;
+
+	// dirname() and basename() screw with the input buffer,
+	// hence we need to make 2 copies.
+	ol = strlen(filename);
+	fncopy = (char *)malloc(ol * 2 + 2);
+	if (!fncopy)
+		return NULL;
+	memset(fncopy, 0, ol + ol + 2);
+	strncpy(fncopy, filename, ol);
+	strncpy(fncopy + ol + 1, filename, ol);
+	
+	dn = dirname(fncopy);
+	fn = basename(fncopy + ol +1);
+	
+	dl = strlen(dn);
+	fl = strlen(fn);
+	if ((dl < 1) || (fl < 1)) {
+		free(fncopy);
+		return NULL;
+	}
+
+	dir = opendir(dn);
+	if (!dir) {
+		free(fncopy);
+		return NULL;
+	}
+	
+	while (NULL != (de = readdir(dir)))
+	{
+		if (de->d_type != DT_REG)
+			continue;
+
+		nfl = strlen(de->d_name);
+		if (nfl != fl)
+			continue;
+			
+		if (0 != strncasecmp(de->d_name, fn, fl))
+			continue;
+			
+		// found a match
+		result = (char *)malloc(dl + 1 + nfl + 1);
+		if (!result)
+			break;
+		memset(result, 0, dl + 1 + nfl + 1);
+		sprintf(result, "%s/%s", dn, de->d_name);
+		break;	// we're done.
+	}
+	free(fncopy);
+	closedir(dir);
+	return result;
+}
 
 FileStream::FileStream() : Stream()
 {
@@ -24,17 +94,40 @@ FileStream::~FileStream()
 
 bool FileStream::exists(const char* filename)
 {
-	bool res = open(filename, MODE_READ);
-	close();
+	char *fn2 = try_to_find_file(filename);
+	bool found = false;
+	
+	if (fn2 != NULL) {
+		found = true;
+		free(fn2);
+	}
 
-	return res;
+	return found;
 }
 
 bool FileStream::open(const char* filename, AccessMode mode)
 {
+	char *fn2;
 	const char* modeStrings[] = { "rb", "wb", "rb+" };
+
+	if (!filename || 1 > strlen(filename))
+		return false;
+
+	// try to open the given filename first; if that fails,
+	// because the filename cannot be found, do a little
+	// digging and find a matching filename with different
+	// case.
 	m_file = fopen(filename, modeStrings[mode]);
 	m_mode = mode;
+	if ((m_file == NULL) && (errno == ENOENT)) {
+		// ok, try harder to find a filename with different case
+		fn2 = try_to_find_file(filename);
+		if (fn2 == NULL) {
+			return false;
+		}
+		m_file = fopen(fn2, modeStrings[mode]);
+		free(fn2);
+	}
 
 	return m_file != nullptr;
 }

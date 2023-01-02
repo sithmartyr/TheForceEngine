@@ -17,6 +17,7 @@
 #include <TFE_Jedi/Level/rfont.h>
 #include <TFE_Jedi/Level/rtexture.h>
 #include <TFE_Jedi/Level/roffscreenBuffer.h>
+#include <cstring>
 
 #define TFE_CONVERT_CAPS 0
 #if TFE_CONVERT_CAPS
@@ -343,8 +344,8 @@ namespace TFE_DarkForces
 		if (!fromSave)
 		{
 			s_secretsFound = 0;
+			s_secretsPercent = 0;
 		}
-		s_secretsPercent = 0;
 
 		hud_initAnimation();
 		if (s_config.showUI)

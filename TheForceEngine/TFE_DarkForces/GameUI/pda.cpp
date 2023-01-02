@@ -98,6 +98,9 @@ namespace TFE_DarkForces
 
 	static PdaMode s_pdaMode = PDA_MODE_MAP;
 	static s32 s_simulatePressed = -1;
+
+	static s32 s_briefingMaxY;
+	static s16 s_briefY;
 		
 	void pda_handleInput();
 	void pda_drawCommonButtons();
@@ -291,7 +294,8 @@ namespace TFE_DarkForces
 			if (mapNumFont)
 			{
 				char str[10];
-				_itoa(automap_getLayer(), str, 10);
+				memset(str, 0, 10);	// just to be safe
+				snprintf(str, 10, "%d", automap_getLayer());
 				// This shows up as an 'S' in the font.
 				if (str[0] == '-') { str[0] = ':'; }
 				// In TFE the map covers the whole screen, so no additional offset is needed.
@@ -407,6 +411,7 @@ namespace TFE_DarkForces
 						if (s_buttonPressed == s_simulatePressed)
 						{
 							automap_updateMapData(MAP_LAYER_UP);
+							s_simulatePressed = 0;
 						}
 					} break;
 					case PDA_BTN_LAYERDOWN:
@@ -414,6 +419,7 @@ namespace TFE_DarkForces
 						if (s_buttonPressed == s_simulatePressed)
 						{
 							automap_updateMapData(MAP_LAYER_DOWN);
+							s_simulatePressed = 0;
 						}
 					} break;
 				}
@@ -625,11 +631,11 @@ namespace TFE_DarkForces
 
 			if (TFE_Input::keyPressed(KEY_LEFTBRACKET))
 			{
-				s_simulatePressed = PDA_BTN_LAYERUP;
+				s_simulatePressed = PDA_BTN_LAYERDOWN;
 			}
 			else if (TFE_Input::keyPressed(KEY_RIGHTBRACKET))
 			{
-				s_simulatePressed = PDA_BTN_LAYERDOWN;
+				s_simulatePressed = PDA_BTN_LAYERUP;
 			}
 		}
 		else if (s_pdaMode == PDA_MODE_BRIEF)
@@ -650,7 +656,7 @@ namespace TFE_DarkForces
 	void pda_drawButton(PdaButton id)
 	{
 		s32 pressed = 0;
-		if ((s_buttonHover && id == s_buttonPressed) || (id == s_pdaMode))
+		if ((s_buttonHover && id == s_buttonPressed) || (id == (PdaButton)s_pdaMode))
 		{
 			pressed = 1;
 		}

@@ -29,6 +29,8 @@
 #include <TFE_DarkForces/mission.h>
 #include <TFE_Jedi/Renderer/jediRenderer.h>
 
+#include <climits>
+
 using namespace TFE_Input;
 
 namespace TFE_FrontEndUI
@@ -496,7 +498,7 @@ namespace TFE_FrontEndUI
 
 			ImGui::SetNextWindowPos(ImVec2(f32(w) - stringWidth - s_versionFont->FontSize*2.0f, f32(h) - s_versionFont->FontSize*4.0f));
 			ImGui::Begin("##Version", &titleActive, windowInvisFlags);
-			ImGui::Text(versionText);
+			ImGui::Text("%s", versionText);
 			ImGui::End();
 			ImGui::PopFont();
 
@@ -1415,7 +1417,7 @@ namespace TFE_FrontEndUI
 		char inputName1[256] = "##Input1";
 		char inputName2[256] = "##Input2";
 
-		ImGui::LabelText("##ConfigLabel", name); ImGui::SameLine(132*s_uiScale);
+		ImGui::LabelText("##ConfigLabel", "%s", name); ImGui::SameLine(132*s_uiScale);
 		if (count >= 1)
 		{
 			InputBinding* binding = inputMapping_getBindingByIndex(indices[0]);
@@ -1653,7 +1655,7 @@ namespace TFE_FrontEndUI
 			yNext += (s_controllerWinOpen ? 250.0f : 29.0f)*s_uiScale;
 			ImGui::PopStyleVar();
 		}
-		ImGui::End();
+		ImGui::EndChild();
 		ImGui::SetNextWindowPos(ImVec2(165.0f*s_uiScale, yNext - scroll));
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0.0f, 0.0f });
 		f32 inputMappingHeight = 1516.0f*s_uiScale;
@@ -1915,7 +1917,7 @@ namespace TFE_FrontEndUI
 		{
 			ImGui::PopStyleVar();
 		}
-		ImGui::End();
+		ImGui::EndChild();
 		ImGui::PopStyleVar();
 		ImGui::SetCursorPosY(yNext + (s_inputMappingOpen ? inputMappingHeight : 29.0f*s_uiScale));
 	}
@@ -2190,7 +2192,7 @@ namespace TFE_FrontEndUI
 		assert(floatValue && labelText);
 		if (!floatValue || !labelText) { return; }
 
-		ImGui::LabelText("##Label", labelText);
+		ImGui::LabelText("##Label", "%s", labelText);
 		ImGui::SameLine(f32(128 * s_uiScale));
 		s32 percValue = s32((*floatValue) * 100.0f);
 
